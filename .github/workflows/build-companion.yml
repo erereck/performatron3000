@@ -1,0 +1,60 @@
+name: Build Performatron 3000
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache-dependency-path: companion/go.mod
+
+      - name: Build companion
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Push-Location companion
+          go build -trimpath -ldflags="-s -w" -o ../dist/performatron-companion.exe .
+          Pop-Location
+          Copy-Item companion/run-hidden.vbs dist/run-hidden.vbs
+
+      - name: Pack extension
+        shell: pwsh
+        run: |
+          Compress-Archive -Path extension\* -DestinationPath dist\extension.zip -Force
+
+      - name: Add quick start
+        shell: pwsh
+        run: |
+          @"
+          PERFORMATRON 3000 — QUICK START
+
+          1. Abra o Discord Desktop.
+          2. Rode performatron-companion.exe (ou run-hidden.vbs para abrir sem janela).
+          3. Extraia extension.zip.
+          4. Chrome/Edge > Extensões > Modo do desenvolvedor > Carregar sem compactação > selecione a pasta extraída.
+          5. Crie um app em https://discord.com/developers/applications, de preferência chamado YouTube.
+          6. Copie o Application ID e cole na extensão.
+          7. Abra uma música no YouTube e clique em PERFORMAR NO DISCORD.
+
+          Não use Bot Token. O projeto só precisa do Application ID público.
+          "@ | Set-Content -Path dist\LEIA-ME.txt -Encoding UTF8
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: performatron3000-windows
+          path: dist/*
+          if-no-files-found: error
