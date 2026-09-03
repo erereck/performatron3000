@@ -329,7 +329,23 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     .replace(/\s*[\[(](?:hd|4k|remaster(?:ed)?[^\])]*?)[\])]/gi, '')
     .replace(/\s*\|\s*(?:official\s+)?(?:music\s+)?video.*$/i, '')
     .replace(/\s*\|\s*(?:official\s+)?audio.*$/i, '')
+    // Feature credits tend to turn clean song names into giant Discord statuses.
+    // Keep only what comes before ft./feat./featuring, with or without punctuation.
+    .replace(/\s*(?:[-–—|•·]\s*)?(?:ft\.?|feat\.?|featuring)\s+.*$/i, '')
     .trim();
+
+  // A very common YouTube music title is "Artist | Song". Treat the left side
+  // as the artist and the right side as the track instead of showing the whole
+  // thing as the song name.
+  const pipe = title.match(/^(.{1,80}?)\s*\|\s*(.{1,140})$/);
+  if (pipe) {
+    const left = normalizeWhitespace(pipe[1]);
+    const right = normalizeWhitespace(pipe[2]);
+    if (left && right) {
+      artist = left;
+      title = right;
+    }
+  }
 
   const dash = title.match(/^(.{1,80}?)\s[-–—]\s(.{1,140})$/);
   if (dash) {
