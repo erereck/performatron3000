@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Performatron 3000",
+  "version": "0.1.0",
+  "description": "Mostra a música tocando no YouTube como Rich Presence do Discord — só quando você quiser performar.",
+  "permissions": ["storage", "tabs", "activeTab"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "http://127.0.0.1:42421/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Performatron 3000",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
