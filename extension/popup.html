@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Performatron 3000</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">PERFORMATRON 3000</p>
+        <h1>Rich Presence do YouTube</h1>
+      </div>
+      <span id="statusDot" class="dot" title="Companion"></span>
+    </header>
+
+    <section id="preview" class="preview empty">
+      <div class="cover-wrap">
+        <img id="cover" alt="Capa">
+      </div>
+      <div class="track-copy">
+        <span class="label">Vai aparecer assim</span>
+        <strong id="trackTitle">Abra uma música no YouTube</strong>
+        <span id="trackArtist">—</span>
+      </div>
+    </section>
+
+    <button id="performButton" class="perform off" type="button">
+      <span class="music">♪</span>
+      <span id="performText">PERFORMAR NO DISCORD</span>
+    </button>
+
+    <div id="message" class="message" aria-live="polite"></div>
+
+    <section class="settings">
+      <label class="field">
+        <span>Discord Application ID</span>
+        <input id="clientId" inputmode="numeric" autocomplete="off" placeholder="123456789012345678">
+      </label>
+      <p class="hint">Crie um app chamado <b>YouTube</b> no Developer Portal e cole o Application ID. Não precisa de bot nem token.</p>
+
+      <label class="row">
+        <span>
+          <b>Capa quadrada</b>
+          <small>Corta o centro da thumb e elimina barras laterais.</small>
+        </span>
+        <input id="squareCover" type="checkbox">
+      </label>
+
+      <label class="row">
+        <span>
+          <b>Limpar título</b>
+          <small>Remove “Official Video”, “Lyrics”, “Topic” e afins.</small>
+        </span>
+        <input id="cleanTitles" type="checkbox">
+      </label>
+
+      <label class="row">
+        <span>
+          <b>Sumir em anúncios</b>
+          <small>Não transforma propaganda em música no Discord.</small>
+        </span>
+        <input id="hideAds" type="checkbox">
+      </label>
+    </section>
+
+    <footer>
+      <span id="companionText">Procurando companion…</span>
+      <a href="https://discord.com/developers/applications" target="_blank" rel="noreferrer">Developer Portal</a>
+    </footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
