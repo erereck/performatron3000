@@ -329,14 +329,10 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     .replace(/\s*[\[(](?:hd|4k|remaster(?:ed)?[^\])]*?)[\])]/gi, '')
     .replace(/\s*\|\s*(?:official\s+)?(?:music\s+)?video.*$/i, '')
     .replace(/\s*\|\s*(?:official\s+)?audio.*$/i, '')
-    // Feature credits tend to turn clean song names into giant Discord statuses.
-    // Keep only what comes before ft./feat./featuring, with or without punctuation.
     .replace(/\s*(?:[-–—|•·]\s*)?(?:ft\.?|feat\.?|featuring)\s+.*$/i, '')
     .trim();
 
-  // A very common YouTube music title is "Artist | Song". Treat the left side
-  // as the artist and the right side as the track instead of showing the whole
-  // thing as the song name.
+  // Artist | Song
   const pipe = title.match(/^(.{1,80}?)\s*\|\s*(.{1,140})$/);
   if (pipe) {
     const left = normalizeWhitespace(pipe[1]);
@@ -347,33 +343,28 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     }
   }
 
-  // Reuploads and soundtrack uploads often use "Artist - Song - Album" while
-  // the channel itself is unrelated (e.g. SMORT). In that shape, the title is
-  // more useful metadata than the uploader: first chunk = artist, second = song,
-  // and the remaining chunks are treated as album/version context.
-  const dashParts = title
-    .split(/\s+[-–—]\s+/)
-    .map(normalizeWhitespace)
-    .filter(Boolean);
+  // YouTube titles are inconsistent about which dash character they use.
+  // Hyphen-minus is treated as a separator only when surrounded by whitespace
+  // (so artist names like blink-182 remain intact). Unicode dash characters are
+  // accepted even without spaces. This catches "C418 - Minecraft - Minecraft
+  // Volume Alpha" plus visually identical variants copied from metadata.
+  const dashParts = splitMusicDashes(title);
 
   if (dashParts.length >= 3 && dashParts[0].length <= 80 && dashParts[1].length <= 140) {
     artist = dashParts[0];
     title = dashParts[1];
-  } else {
-    const dash = title.match(/^(.{1,80}?)\s[-–—]\s(.{1,140})$/);
-    if (dash) {
-      const left = normalizeWhitespace(dash[1]);
-      const right = normalizeWhitespace(dash[2]);
-      const comparableChannel = artist.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
-      const comparableLeft = left.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
+  } else if (dashParts.length === 2) {
+    const left = dashParts[0];
+    const right = dashParts[1];
+    const comparableChannel = comparable(artist);
+    const comparableLeft = comparable(left);
 
-      if (!artist || comparableChannel.includes(comparableLeft) || comparableLeft.includes(comparableChannel)) {
-        artist = left;
-        title = right;
-      } else if (/topic$/i.test(inputArtist) || /vevo$/i.test(inputArtist)) {
-        artist = left;
-        title = right;
-      }
+    if (!artist || comparableChannel.includes(comparableLeft) || comparableLeft.includes(comparableChannel)) {
+      artist = left;
+      title = right;
+    } else if (/topic$/i.test(inputArtist) || /vevo$/i.test(inputArtist)) {
+      artist = left;
+      title = right;
     }
   }
 
@@ -381,6 +372,19 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     title: normalizeWhitespace(title),
     artist: normalizeWhitespace(artist)
   };
+}
+
+function splitMusicDashes(value) {
+  return normalizeWhitespace(value)
+    .split(/(?:\s+-\s+|\s*[‐‑‒–—―−]\s*)/u)
+    .map(normalizeWhitespace)
+    .filter(Boolean);
+}
+
+function comparable(value) {
+  return normalizeWhitespace(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\p{L}]/gu, '');
 }
 
 function squareCoverUrl(url) {
@@ -396,7 +400,11 @@ function squareCoverUrl(url) {
 }
 
 function normalizeWhitespace(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
+  return String(value || '')
+    .replace(/[\u00A0\u2007\u202F]/g, ' ')
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function clamp(value, max) {
