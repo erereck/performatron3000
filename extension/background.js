@@ -347,19 +347,33 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     }
   }
 
-  const dash = title.match(/^(.{1,80}?)\s[-–—]\s(.{1,140})$/);
-  if (dash) {
-    const left = normalizeWhitespace(dash[1]);
-    const right = normalizeWhitespace(dash[2]);
-    const comparableChannel = artist.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
-    const comparableLeft = left.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
+  // Reuploads and soundtrack uploads often use "Artist - Song - Album" while
+  // the channel itself is unrelated (e.g. SMORT). In that shape, the title is
+  // more useful metadata than the uploader: first chunk = artist, second = song,
+  // and the remaining chunks are treated as album/version context.
+  const dashParts = title
+    .split(/\s+[-–—]\s+/)
+    .map(normalizeWhitespace)
+    .filter(Boolean);
 
-    if (!artist || comparableChannel.includes(comparableLeft) || comparableLeft.includes(comparableChannel)) {
-      artist = left;
-      title = right;
-    } else if (/topic$/i.test(inputArtist) || /vevo$/i.test(inputArtist)) {
-      artist = left;
-      title = right;
+  if (dashParts.length >= 3 && dashParts[0].length <= 80 && dashParts[1].length <= 140) {
+    artist = dashParts[0];
+    title = dashParts[1];
+  } else {
+    const dash = title.match(/^(.{1,80}?)\s[-–—]\s(.{1,140})$/);
+    if (dash) {
+      const left = normalizeWhitespace(dash[1]);
+      const right = normalizeWhitespace(dash[2]);
+      const comparableChannel = artist.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
+      const comparableLeft = left.toLowerCase().replace(/[^a-z0-9\p{L}]/gu, '');
+
+      if (!artist || comparableChannel.includes(comparableLeft) || comparableLeft.includes(comparableChannel)) {
+        artist = left;
+        title = right;
+      } else if (/topic$/i.test(inputArtist) || /vevo$/i.test(inputArtist)) {
+        artist = left;
+        title = right;
+      }
     }
   }
 
