@@ -1,0 +1,79 @@
+name: Publish Performatron 3000 v0.1.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.1.2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache-dependency-path: companion/go.mod
+
+      - name: Build package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+
+          Push-Location companion
+          go build -trimpath -ldflags="-s -w" -o ../package/performatron-companion.exe .
+          Pop-Location
+
+          Copy-Item companion/run-hidden.vbs package/run-hidden.vbs
+          Compress-Archive -Path extension\* -DestinationPath package\extension.zip -Force
+
+          @"
+          PERFORMATRON 3000 v0.1.2 — QUICK START
+
+          1. Abra o Discord Desktop.
+          2. Rode performatron-companion.exe (ou run-hidden.vbs para abrir escondido).
+          3. Extraia extension.zip.
+          4. Chrome/Edge > Extensões > Modo do desenvolvedor > Carregar sem compactação > selecione a pasta extraída.
+          5. Crie uma aplicação em https://discord.com/developers/applications, de preferência chamada YouTube.
+          6. Copie o Application ID e cole na extensão. NÃO use Bot Token.
+          7. Abra uma música no YouTube e clique em PERFORMAR NO DISCORD.
+
+          v0.1.2:
+          - Tudo da v0.1.1.
+          - Reconhece títulos no formato "Artista - Música - Álbum/versão".
+          - Exemplo: "C418 - Sweden - Minecraft Volume Alpha" vira artista C418 + música Sweden.
+          - O nome do canal deixa de atrapalhar nesses reuploads de soundtrack.
+          "@ | Set-Content -Path package\LEIA-ME.txt -Encoding UTF8
+
+          Compress-Archive -Path package\* -DestinationPath performatron3000-windows-v0.1.2.zip -Force
+
+      - name: Write release notes
+        shell: pwsh
+        run: |
+          @"
+          ## Performatron 3000 v0.1.2
+
+          Pequena atualização focada em títulos de soundtrack/reupload.
+
+          ### Novo
+          - `C418 - Sweden - Minecraft Volume Alpha` agora vira **Sweden** / **C418**.
+          - Reconhece automaticamente o padrão `Artista - Música - Álbum/versão` mesmo quando o canal do upload é outra pessoa.
+          - Mantém as limpezas de `ft.`, `feat.`, `Artist | Song`, Official Video, Lyrics e afins.
+
+          ### Instalação
+          Baixe **performatron3000-windows-v0.1.2.zip**, extraia e siga o `LEIA-ME.txt`.
+          "@ | Set-Content -Path RELEASE.md -Encoding UTF8
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.2 .\performatron3000-windows-v0.1.2.zip --target "$env:GITHUB_SHA" --title "Performatron 3000 v0.1.2" --notes-file RELEASE.md
