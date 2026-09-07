@@ -321,17 +321,12 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
     .replace(/VEVO$/i, '')
     .trim();
 
-  // Parentheses in YouTube music titles are overwhelmingly metadata such as
-  // (Official Video), (Remastered), (Live), (Lyrics), etc. Remove every complete
-  // parenthetical group, including nested ones, before parsing artist/song data.
-  title = normalizeWhitespace(stripParentheticalContent(title));
+  // Parentheses and square brackets in YouTube music titles are overwhelmingly
+  // metadata such as (Official Video), [Lyrics], (Remastered), [HD], etc.
+  // Remove every complete group, including nested/mixed groups, before parsing.
+  title = normalizeWhitespace(stripBracketedContent(title));
 
   title = title
-    .replace(/\s*[\[(](?:official\s+)?(?:music\s+)?video[^\])]*[\])]/gi, '')
-    .replace(/\s*[\[(](?:official\s+)?audio[^\])]*[\])]/gi, '')
-    .replace(/\s*[\[(](?:lyrics?|lyric\s+video)[^\])]*[\])]/gi, '')
-    .replace(/\s*[\[(](?:visuali[sz]er|visualizer)[^\])]*[\])]/gi, '')
-    .replace(/\s*[\[(](?:hd|4k|remaster(?:ed)?[^\])]*?)[\])]/gi, '')
     .replace(/\s*\|\s*(?:official\s+)?(?:music\s+)?video.*$/i, '')
     .replace(/\s*\|\s*(?:official\s+)?audio.*$/i, '')
     .replace(/\s*(?:[-–—|•·]\s*)?(?:ft\.?|feat\.?|featuring)\s+.*$/i, '')
@@ -379,15 +374,17 @@ function cleanMusicMetadata(inputTitle, inputArtist) {
   };
 }
 
-function stripParentheticalContent(value) {
+function stripBracketedContent(value) {
   let result = String(value || '');
   let previous;
 
-  // Repeating the innermost-group removal also handles nested parentheses:
-  // "Song (Live (Acoustic))" -> "Song".
+  // Repeating innermost removals handles nesting and mixed forms:
+  // "Song (Live [Acoustic]) [Remastered]" -> "Song".
   do {
     previous = result;
-    result = result.replace(/\s*\([^()]*\)/g, '');
+    result = result
+      .replace(/\s*\([^()\[\]]*\)/g, '')
+      .replace(/\s*\[[^\[\]()]*\]/g, '');
   } while (result !== previous);
 
   return result;
